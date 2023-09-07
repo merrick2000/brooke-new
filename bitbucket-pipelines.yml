@@ -1,0 +1,32 @@
+image:
+  name: atlassian/default-image:4
+
+clone: 
+  depth: full
+
+definitions:
+  steps:
+    - step: &build-artifact
+        name: Build Artifact
+        branch: cicd
+        script:
+          - git archive --format=tar.gz cicd -o brooke-prono-front.tar.gz
+        artifacts:
+          - brooke-prono-front.tar.gz
+
+    - step: &deploy-to-prod
+          name: Deploy to Production
+          deployment: Production
+          script: 
+            - pipe: atlassian/heroku-deploy:2.1.0
+              variables:
+                HEROKU_API_KEY: $HEROKU_API_KEY
+                HEROKU_APP_NAME: $HEROKU_APP_NAME
+                ZIP_FILE: brooke-prono-front.tar.gz
+                WAIT: 'true' # wait for build completion and exit the pipe
+
+pipelines:
+  branches:
+    cicd:
+      - step: *build-artifact
+      - step: *deploy-to-prod
